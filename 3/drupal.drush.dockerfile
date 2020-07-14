@@ -24,7 +24,11 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Update the repository sources list
 # RUN apt-get update
 
+#https://www.linode.com/docs/websites/cms/drupal/drush-drupal/how-to-install-drupal-using-drush-on-ubuntu-18-04/
+
 # Install and run apache
+#RUN apt-get install php-gd php-xml php-dom php-simplexml php-mbstring
+
 RUN apt-get install -y apache2 php php-mysql php-mbstring php-xml php-gd wget curl unzip zip && apt-get clean
 
 
@@ -50,7 +54,20 @@ RUN	chown www-data:www-data /var/www/html/ -Rf
 #RUN chown -R -f www-data:www-data /var/www/html
 
 
+ 
 
+RUN echo "download" 
+RUN apt-get install ca-certificates
+RUN wget http://curl.haxx.se/ca/cacert.pem -O  cacert.crt --no-check-certificate
+RUN ls /usr/local/share/ca-certificates/
+RUN cp cacert.crt /usr/local/share/ca-certificates/cacert.crt
+RUN update-ca-certificates
+
+RUN php -m
+
+
+#RUN trust -v anchor cacert.crt
+# then logged into that VM and see it has adde
 # https://raspberrytips.com/wordpress-on-raspberry-pi/
 # RUN wget https://wordpress.org/latest.zip -O /var/www/html/wordpress.zip
 
@@ -58,6 +75,34 @@ RUN	chown www-data:www-data /var/www/html/ -Rf
 
 # Installing composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'e5325b19b381bfd88ce90a5ddb7823406b2a38cff6bb704b0acc289a09c8128d4a8ce2bbafcd1fcbdc38666422fe2806') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+RUN php composer-setup.php
+RUN php -r "unlink('composer-setup.php');"
+
+
+
+RUN a2enmod ssl
+
+#RUN service apache2 restart
+
+RUN mkdir /etc/apache2/ssl
+
+#RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/apache2/ssl/apache.key -out /etc/apache2/ssl/apache.crt
+
+# RUN echo	"<pre> \n" \ 
+# 		"<IfModule modssl.c> \n" \ 
+# 		"<VirtualHost _default:443> \n" \ 
+# 		"ServerAdmin webmaster@localhost \n" \ 
+# 		"DocumentRoot /var/www/html ErrorLog ${APACHELOGDIR}/error.log \n" \ 
+# 		"CustomLog ${APACHELOGDIR}/access.log combined \n" \ 
+# 		"SSLEngine on \n" \ 
+# 		"SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key <FilesMatch “.(cgi|shtml|phtml|php)$”> SSLOptions +StdEnvVars </FilesMatch> <Directory /usr/lib/cgi-bin> SSLOptions +StdEnvVars </Directory> BrowserMatch “MSIE [2-6]” \ nokeepalive ssl-unclean-shutdown \ downgrade-1.0 force-response-1.0 BrowserMatch “MSIE [17-9]” ssl-unclean-shutdown </VirtualHost> </IfModule> </pre>" > /etc/apache2/sites-available/default-ssl.conf
+
+#RUN a2ensite default-ssl.conf
+RUN service apache2 restart
 
 
 WORKDIR /var/www/html/
@@ -79,6 +124,22 @@ RUN mv -v /var/www/html/drupal/* /var/www/html/
 # delete wordpress temp directory
 #RUN rmdir /var/www/html/drupal-*/
 RUN rm -rf /var/www/html/drupal/
+#RUN composer update
+#RUN composer create-project drupal/recommended-projects
+
+#RUN composer config --global disable-tls true
+#RUN composer config --global secure-http false
+#RUN composer diag
+#RUN composer create-project drupal/recommended-project my_site_name_dir
+
+
+#RUN composer create-project drupal-composer/drupal-project:8.x-dev drupal-composer-build --no-check-certificate
+RUN composer global require drush/drush
+
+RUN composer global require webflo/drush-shim
+
+RUN composer update drupal/core –with-dependencies
+
 
 RUN usermod -a -G www-data root
 #RUN chown -R -f www-data:www-data /var/www/html
@@ -93,7 +154,21 @@ RUN a2enmod rewrite
 
 # nano /etc/apache2/sites-available/default-ssl.conf
 
+# RUN echo "<Directory /var/www/html/> \n" \ 
+# 		"    Options Indexes FollowSymLinks \n" \ 
+# 		"    AllowOverride All \n" \ 
+# 		"    Require all granted \n" \ 
+# 		"      RewriteEngine on \n" \ 
+# 		"      RewriteBase / \n" \ 
+# 		"      RewriteCond %{REQUEST_FILENAME} !-f \n" \ 
+# 		"      RewriteCond %{REQUEST_FILENAME} !-d \n" \ 
+# 		"      RewriteRule ^(.*)$ index.php?q=$1 [L,QSA] \n" \ 
+# 		"</Directory>" > 000-default.conf.gg
 
+
+#RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
+
+#RUN mv 000-default.conf /etc/apache2/sites-available/000-default.conf
 #RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/default
 #RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/default-ssl
 
@@ -114,9 +189,11 @@ RUN a2enmod rewrite
 
 RUN cp /var/www/html/sites/default/default.settings.php /var/www/html/sites/default/settings.php
 
-RUN sed -i -r "s/$databases = [];/$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];/g" sites/default/settings.php
-
-RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
+RUN chmod 777 /var/www/html/sites/default/settings.php
+#RUN sed -i -r "s/$databases = [];/$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];/g" sites/default/settings.php
+#RUN sed -i -r '/$databases = [];/c\$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];' sites/default/settings.php
+#RUN cat sites/default/settings.php
+#RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
 RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/apache2.conf
 
 RUN apt-get install perl nano -y
@@ -124,7 +201,11 @@ RUN apt-get install perl nano -y
 
 # RUN find /etc -name httpd* -or find /etc -name apache2* 
 
-RUN apache2ctl -M | grep -i write
+#RUN apache2ctl -M | grep -i write
+
+RUN drush si standard --db-url=mysql://admin:admin@db/mydb 
+#--site-name=example.com
+#RUN drush si standard --db-url=mysql://username:password@localhost/databasename --site-name=example.com
 
 #RUN chmod 755 wordpress -R
 #RUN chown www-data wordpress -R
@@ -210,7 +291,7 @@ RUN apache2ctl -M | grep -i write
 # RUN echo 'ServerName localhost' > /etc/apache2/apache2.conf
 
 #RUN echo hostname -I
-RUN ls /var/www/html/
+#RUN ls /var/www/html/
 
 
 # WORKDIR /var/www/html/

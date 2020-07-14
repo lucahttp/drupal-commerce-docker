@@ -114,8 +114,10 @@ RUN a2enmod rewrite
 
 RUN cp /var/www/html/sites/default/default.settings.php /var/www/html/sites/default/settings.php
 
-RUN sed -i -r "s/$databases = [];/$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];/g" sites/default/settings.php
-
+RUN chmod 777 /var/www/html/sites/default/settings.php
+#RUN sed -i -r "s/$databases = [];/$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];/g" sites/default/settings.php
+#RUN sed -i -r '/$databases = [];/c\$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];' sites/default/settings.php
+RUN cat sites/default/settings.php
 RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
 RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/apache2.conf
 
@@ -210,7 +212,7 @@ RUN apache2ctl -M | grep -i write
 # RUN echo 'ServerName localhost' > /etc/apache2/apache2.conf
 
 #RUN echo hostname -I
-RUN ls /var/www/html/
+#RUN ls /var/www/html/
 
 
 # WORKDIR /var/www/html/

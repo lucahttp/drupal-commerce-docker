@@ -22,7 +22,7 @@ services:
       - db
     build:
       context: ./
-      dockerfile: drupal.dockerfile
+      dockerfile: drupal.drush.dockerfile
       args:
         db_host: db
         db_port: 3306
