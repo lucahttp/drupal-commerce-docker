@@ -80,8 +80,8 @@ RUN mv -v /var/www/html/drupal/* /var/www/html/
 #RUN rmdir /var/www/html/drupal-*/
 RUN rm -rf /var/www/html/drupal/
 
-RUN usermod -a -G www-data root
-RUN chown -R -f www-data:www-data /var/www/html
+#RUN usermod -a -G www-data root
+#RUN chown -R -f www-data:www-data /var/www/html
 
 # RUN	chown www-data:www-data /var/www/html/ -Rf
 
@@ -188,7 +188,7 @@ RUN ls /var/www/html/
 
 
 # WORKDIR /var/www/html/
-# EXPOSE 80
+EXPOSE 80
 # EXPOSE 443
 
 # By default, simply start apache.
