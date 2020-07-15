@@ -29,8 +29,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Install and run apache
 #RUN apt-get install php-gd php-xml php-dom php-simplexml php-mbstring
 
-RUN apt-get install -y apache2 php php-mysql php-mbstring php-xml php-gd wget curl unzip zip && apt-get clean
+RUN apt-get install -y apache2 php php-mysql php-mbstring php-xml php-gd wget curl unzip zip mysql-client && apt-get clean
 
+RUN apt-get install perl nano -y
 
 # delete all file of the html folder
 RUN rm -R /var/www/html/*
@@ -136,10 +137,23 @@ RUN rm -rf /var/www/html/drupal/
 #RUN composer create-project drupal-composer/drupal-project:8.x-dev drupal-composer-build --no-check-certificate
 RUN composer global require drush/drush
 
-RUN composer global require webflo/drush-shim
+#RUN composer global require webflo/drush-shim
 
 RUN composer update drupal/core –with-dependencies
+RUN composer update
+RUN composer install
 
+RUN composer require --dev drush/drush
+RUN ./vendor/bin/drush --version
+#RUN ~/.bashrc
+
+
+#RUN wget -O drush.phar https://github.com/drush-ops/drush-launcher/releases/download/0.6.0/drush.phar
+#RUN chmod +x drush.phar
+#RUN mv drush.phar /usr/local/bin/drush
+#RUN ./vendor/bin/drush si standard --db-url=mysql://admin:admin@db/mydb -y
+#--site-name=example.com
+#RUN drush si standard --db-url=mysql://username:password@localhost/databasename --site-name=example.com
 
 RUN usermod -a -G www-data root
 #RUN chown -R -f www-data:www-data /var/www/html
@@ -191,21 +205,85 @@ RUN cp /var/www/html/sites/default/default.settings.php /var/www/html/sites/defa
 
 RUN chmod 777 /var/www/html/sites/default/settings.php
 #RUN sed -i -r "s/$databases = [];/$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];/g" sites/default/settings.php
+
+#RUN sed -E "s/\$databases = [];/\asdasd/" /var/www/html/sites/default/settings.php
+#RUN sed -i "/${PWD//\//\\/}/a Hello World" /var/www/html/sites/default/settings.php
+#nano /var/www/html/sites/default/settings.php
+#RUN sed -e "s/\$databases = [];\([^ ,]*\)/'variable_\1'/g"  /var/www/html/sites/default/settings.php
+#RUN STR="\$databases = [];"
+#RUN echo $STR   
+#RUN grep "\$databases = [];/" /var/www/html/sites/default/settings.php
+
+
+#https://stackoverflow.com/questions/41570993/using-sed-to-replace-variable-name-and-its-value/41575985
+#$_PATHROOT = '../../../../';
+#define('_PATHROOT', '../../../../');
+#sed -ri "s/^[$]_PATHROOT = '(([.][.]\/)+)';$/define('_PATHROOT', '\1');/" FILEPATH
+
+#RUN sed -ri "s/[$]databases = [];/define('_PATHROOT', '\1');/" /var/www/html/sites/default/settings.php
+#https://unix.stackexchange.com/questions/183845/how-do-i-replace-a-string-with-dollar-sign-in-sed/183848
+
+
+RUN ORIGINAL='File.Config=\$(config, 8, 12)'
+RUN MODIFIED='File.Config=\#(config, 8, 12)'
+RUN Var1='\$databases = []'
+RUN Var2='\$dotabases = []'
+
+
+#RUN grep '\$databases' /var/www/html/sites/default/settings.php
+#RUN cat /var/www/html/sites/default/settings.php | grep "\$databases = []"
+#https://stackoverflow.com/questions/48780463/how-to-replace-a-text-string-with-dollar-sign-in-linux
+# el chabon que hizo este pos me re salvo de perder la cordura
+#RUN sed -i s/databases/\\\$databases\ gg/g /var/www/html/sites/default/settings.php
+#RUN sed -i s/databases/\\\$databases\ \=\ \[]\/g /var/www/html/sites/default/settings.php
+#Working
+#RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$dotabases\ \=\ \[]\/g /var/www/html/sites/default/settings.php
+#Working
+#RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$databases\ \=\ \\\[]\/g /var/www/html/sites/default/settings.php
+#RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$databases['default']['default']\ \=\ \['database'\ \=\>\ \\\]\/g /var/www/html/sites/default/settings.php
+
+#WORKING AJUA
+RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$databases["'default'"]["'default'"]\ \=\ \["'database'"\ \=\>\ "'mydb'","'username'"\ \=\>\ "'admin'","'password'"\ \=\>\ "'admin'","'host'"\ \=\>\ "'db'","'port'"\ \=\>\ "'3306'","'driver'"\ \=\>\ "'mysql'","'prefix'"\ \=\>\ "'dp_'","'collation'"\ \=\>\ "'utf8mb4_general_ci'",\]/g /var/www/html/sites/default/settings.php
+
+#  nano /var/www/html/sites/default/settings.php
+
+#RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$databases['default']['default']\/g /var/www/html/sites/default/settings.php
+
+#https://linuxhint.com/bash_sed_examples/
+#RUN rm /var/www/html/sites/default/settings.php
+#RUN echo "\$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];" > /var/www/html/sites/default/settings.php
+
+# RUN echo "\$databases['default']['default'] = [ \n" \ 
+# 		"          'database' => 'databasename', \n" \ 
+# 		"          'username' => 'sqlusername', \n" \ 
+# 		"          'password' => 'sqlpassword', \n" \ 
+# 		"          'host' => 'localhost', \n" \ 
+# 		"          'port' => '3306', \n" \ 
+# 		"          'driver' => 'mysql', \n" \ 
+# 		"          'prefix' => '', \n" \ 
+# 		"          'collation' => 'utf8mb4_general_ci'," > /var/www/html/sites/default/settings.php
+#RUN sed -i -e '$a\$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];' /var/www/html/sites/default/settings.php
+
+RUN cat /var/www/html/sites/default/settings.php
+#RUN sed 's/$STR/GG/g' /var/www/html/sites/default/settings.php
+
+#RUN cat /var/www/html/sites/default/settings.php
+#sed -e "s/\$variable_\([^ ,]*\)/'variable_\1'/g" myscript.php
+
 #RUN sed -i -r '/$databases = [];/c\$databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];' sites/default/settings.php
 #RUN cat sites/default/settings.php
 #RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
 RUN sed -i -r "s/AllowOverride None/AllowOverride All/g" /etc/apache2/apache2.conf
 
-RUN apt-get install perl nano -y
+
+
+#RUN sed -i "15i $databases['default']['default'] = ['database' => 'mydb','username' => 'admin','password' => 'admin','host' => 'db','port' => '3306','driver' => 'mysql','prefix' => 'dp_','collation' => 'utf8mb4_general_ci',];" /var/www/html/sites/default/settings.php
 #RUN perl -0777 -pe 's/(.*<Directory '/var/www/html'>[^\n]*)/$1\nAllowOverride All/s' /etc/apache2/sites-available/000-default.conf
 
 # RUN find /etc -name httpd* -or find /etc -name apache2* 
 
 #RUN apache2ctl -M | grep -i write
 
-RUN drush si standard --db-url=mysql://admin:admin@db/mydb 
-#--site-name=example.com
-#RUN drush si standard --db-url=mysql://username:password@localhost/databasename --site-name=example.com
 
 #RUN chmod 755 wordpress -R
 #RUN chown www-data wordpress -R
@@ -253,13 +331,15 @@ RUN drush si standard --db-url=mysql://admin:admin@db/mydb
 
 
 # define( ‘DB_HOST’, ‘localhost:3306‘ );
-#ARG db_host="localhost"
-#ARG db_port="3306"
-#ARG db_name="db"
-#ARG db_user="admin"
-#ARG db_pass="admin"
+ARG db_host="localhost"
+ARG db_port="3306"
+ARG db_name="db"
+ARG db_user="admin"
+ARG db_pass="admin"
+ARG db_pref="dp_"
+ARG db_coll="utf8mb4_general_ci"
 
-
+RUN sed -i s/\\\$databases\ \=\ \\\[]\/\\\$databases["'default'"]["'default'"]\ \=\ \["'database'"\ \=\>\ "'${db_name}'","'username'"\ \=\>\ "'${db_user}'","'password'"\ \=\>\ "'${db_pass}'","'host'"\ \=\>\ "'${db_host}'","'port'"\ \=\>\ "'${db_port}'","'driver'"\ \=\>\ "'mysql'","'prefix'"\ \=\>\ "'${db_pref}'","'collation'"\ \=\>\ "'${db_coll}'",\]/g /var/www/html/sites/default/settings.php
 
 #WORKDIR /var/www/html/
 # RUN cd /var/www/html/

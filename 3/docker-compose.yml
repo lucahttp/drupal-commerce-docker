@@ -29,6 +29,8 @@ services:
         db_name: mydb
         db_user: admin
         db_pass: admin
+        db_pref: dp_
+        db_coll: utf8mb4_general_ci
     ports:
       - "8080:80"
       #- "443:443"
